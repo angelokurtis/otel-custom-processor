@@ -38,7 +38,7 @@ func createTracesProcessor(ctx context.Context, set processor.CreateSettings, cf
 		cfg,
 		nextConsumer,
 		func(ctx context.Context, traces ptrace.Traces) (ptrace.Traces, error) {
-			set.Logger.Warn("running otel-custom-processor developed by Kurtis", zap.Int("span_count", traces.SpanCount()))
+			set.Logger.Warn("running otelcustomprocessor developed by Kurtis", zap.Int("span_count", traces.SpanCount()))
 			return traces, nil
 		},
 		processorhelper.WithCapabilities(processorCapabilities))
