@@ -2,12 +2,12 @@ package customprocessor
 
 import (
 	"context"
+	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
-	"go.uber.org/zap"
+	"log"
 )
 
 const (
@@ -17,9 +17,10 @@ const (
 	stability = component.StabilityLevelDevelopment
 )
 
-var processorCapabilities = consumer.Capabilities{MutatesData: false}
-
 func NewFactory() processor.Factory {
+	if err := view.Register(NewMetricViews()...); err != nil {
+		log.Fatal(err)
+	}
 	return processor.NewFactory(
 		typeStr,
 		createDefaultConfig,
@@ -32,14 +33,12 @@ func createDefaultConfig() component.Config {
 }
 
 func createTracesProcessor(ctx context.Context, set processor.CreateSettings, cfg component.Config, nextConsumer consumer.Traces) (processor.Traces, error) {
+	tp := NewTracesProcessor(set.Logger)
 	return processorhelper.NewTracesProcessor(
 		ctx,
 		set,
 		cfg,
 		nextConsumer,
-		func(ctx context.Context, traces ptrace.Traces) (ptrace.Traces, error) {
-			set.Logger.Warn("running otelcustomprocessor developed by Kurtis", zap.Int("span_count", traces.SpanCount()))
-			return traces, nil
-		},
-		processorhelper.WithCapabilities(processorCapabilities))
+		tp.Count,
+		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}))
 }
